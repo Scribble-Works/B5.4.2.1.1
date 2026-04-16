@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AssignmentX Math Game</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --wood-brown: #5d4037;
+            --wood-grain: #795548; 
+            --mathly-blue: #00d2ff;
+            --mathly-yellow: #fbc531;
+            --mathly-red: #e84118;
+            --mathly-green: #2ecc71;
+            --glass-white: rgba(255, 255, 255, 0.95);
+            --rope-color: #a1887f;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background: linear-gradient(rgba(10, 25, 47, 0.4), rgba(10, 25, 47, 0.4)), url('background.jpg');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            min-height: 100vh; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            overflow: hidden;
+            position: relative;
+        }
+
+        #bg-canvas { position: absolute; inset: 0; pointer-events: none; z-index: 1; opacity: 0.25; }
+
+        .character-img {
+            position: absolute; 
+            z-index: 5; 
+            filter: drop-shadow(0 10px 15px rgba(0,0,0,0.3));
+            animation: float 3.5s ease-in-out infinite;
+            pointer-events: none;
+        }
+        
+        #panda-main { width: 220px; top: -60px; right: -100px; --r: 12deg; transform: rotate(var(--r)); }
+        #mouse-main { width: 200px; top: -50px; left: -100px; --r: -12deg; transform: rotate(var(--r)); }
+
+        @keyframes float { 
+            0%, 100% { transform: translateY(0) rotate(var(--r)); } 
+            50% { transform: translateY(-15px) rotate(var(--r)); } 
+        }
+
+        .game-area-container {
+            display: none; 
+            width: 92%; 
+            max-width: 440px;
+            z-index: 10;
+            position: relative;
+            animation: zoomIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            padding-top: 40px; 
+        }
+
+        .active { display: block; }
+        @keyframes zoomIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+        .wood-title-banner {
+            background: linear-gradient(135deg, var(--wood-grain) 0%, var(--wood-brown) 100%);
+            border: 4px solid #3e2723;
+            border-radius: 15px 50px 20px 45px; 
+            padding: 18px 25px;
+            box-shadow: 0 12px 24px rgba(0,0,0,0.4), inset 0 2px 8px rgba(255,255,255,0.1);
+            margin-bottom: 35px; 
+            position: relative;
+            z-index: 11;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transform-origin: center -100vh;
+            animation: sway 6s ease-in-out infinite;
+        }
+
+        .wood-title-banner::before, .wood-title-banner::after {
+            content: ''; position: absolute; top: -100vh; width: 8px; height: 100vh; 
+            background: repeating-linear-gradient(0deg, var(--rope-color), var(--rope-color) 5px, #8d6e63 10px);
+            border-radius: 4px; box-shadow: 2px 0 5px rgba(0,0,0,0.3); z-index: -1;
+        }
+        .wood-title-banner::before { left: 40px; }
+        .wood-title-banner::after { right: 40px; }
+
+        @keyframes sway { 0%, 100% { transform: rotate(-1deg); } 50% { transform: rotate(1deg); } }
+
+        .banner-logo {
+            width: 60px; height: 60px; object-fit: contain; position: absolute;
+            left: 20px; filter: drop-shadow(0 0 15px rgba(255, 255, 255, 0.9));
+        }
+
+        .wood-title-banner h2 {
+            font-size: 1.2rem; color: #fff9c4; font-weight: 900; text-transform: uppercase;
+            letter-spacing: 1px; text-shadow: 2px 2px 0px rgba(0,0,0,0.5); margin-left: 55px;
+        }
+
+        .card { 
+            width: 100%; background: var(--glass-white); backdrop-filter: blur(12px); 
+            border: 6px solid var(--wood-brown); border-radius: 40px; 
+            padding: 30px; text-align: center; box-shadow: 0 25px 50px rgba(0,0,0,0.5); 
+            position: relative; z-index: 12;
+        }
+
+        .mission-header { background: var(--wood-brown); color: white; padding: 15px; border-radius: 20px; margin-bottom: 20px; }
+        .btn-green { width: 100%; padding: 16px; border: none; border-radius: 20px; background: var(--mathly-green); color: white; font-weight: 900; font-size: 1.1rem; cursor: pointer; text-transform: uppercase; box-shadow: 0 6px 0 #27ae60; margin-bottom: 5px; transition: transform 0.1s; }
+        .btn-green:active { transform: translateY(4px); box-shadow: 0 2px 0 #27ae60; }
+        
+        .btn-tool { flex: 1; background: white; border: 2px solid var(--wood-brown); color: var(--wood-brown); padding: 12px 5px; border-radius: 12px; font-size: 0.8rem; font-weight: 800; cursor: pointer; }
+        .btn-exit { border-color: var(--mathly-red) !important; color: var(--mathly-red) !important; }
+        .tool-row { display: flex; justify-content: center; gap: 10px; margin-top: 15px; width: 100%; }
+        
+        .timer-container { width: 100%; height: 14px; background: #eee; border-radius: 10px; margin-bottom: 12px; overflow: hidden; border: 2px solid #ddd; }
+        #timer-bar { width: 100%; height: 100%; background: var(--mathly-red); transition: width 1s linear; }
+        
+        .experiment-visual { background: white; border: 3px solid var(--mathly-blue); border-radius: 20px; margin: 15px 0; height: 120px; display: flex; align-items: center; justify-content: center; font-size: 4rem; }
+        
+        .options-container { display: flex; flex-direction: column; gap: 10px; margin: 20px 0; }
+        .option-btn { background: white; border: 3px solid #dfe6e9; padding: 12px; border-radius: 18px; font-size: 1.1rem; font-weight: 900; cursor: pointer; color: var(--wood-brown); transition: all 0.2s; }
+        .option-btn:hover { border-color: var(--mathly-blue); transform: scale(1.02); }
+        .option-btn.selected { background: var(--mathly-blue); color: white; border-color: #0097a7; }
+
+        .key-badge { background: #fff9c4; border: 2px dashed #fbc02d; padding: 10px; border-radius: 12px; font-weight: 900; color: #856404; font-size: 0.9rem; margin-bottom: 12px; }
+        .question-box { background: white; border-left: 10px solid var(--mathly-blue); padding: 15px; text-align: left; font-size: 1rem; font-weight: 800; border-radius: 0 20px 20px 0; }
+
+        .level-map { display: flex; justify-content: center; gap: 8px; margin-top: 20px; }
+        .lvl-dot { width: 45px; height: 45px; border-radius: 14px; background: white; border: 3px solid #d7ccc8; display: flex; align-items: center; justify-content: center; font-weight: 900; cursor: pointer; font-size: 1.1rem; }
+        .lvl-dot.active-lvl { background: var(--mathly-yellow); color: white; border-color: #f9a825; }
+        .lvl-dot.locked { opacity: 0.4; cursor: not-allowed; }
+
+        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 100; justify-content: center; align-items: center; }
+        .modal-content { background: white; padding: 30px; border-radius: 35px; border: 6px solid var(--wood-brown); width: 85%; max-width: 380px; text-align: center; }
+    </style>
+</head>
+<body>
+
+    <canvas id="bg-canvas"></canvas>
+
+    <div id="scr-start" class="game-area-container active">
+        <img src="mouse.png" id="mouse-main" class="character-img" alt="Mouse">
+        <img src="panda.png" id="panda-main" class="character-img" alt="Panda">
+        <div class="wood-title-banner">
+            <img src="logo.png" class="banner-logo" alt="Logo">
+            <h2>ASSIGNMENTX - BASIC 5</h2>
+        </div>
+        <div class="card">
+            <div class="mission-header"><h1 style="font-size: 1.2rem; text-transform: uppercase; font-weight: 900;">Data: Chance (Probability)</h1></div>
+            <p style="font-weight: 800; color: var(--wood-brown); margin-bottom: 25px; font-size: 1rem;">B5.4.2.1.1: Classify the likelihood of a single outcome occurring in a probability experiment as impossible, possible, or certain</p>
+            <button class="btn-green" onclick="startMission()">BEGIN MISSION</button>
+            <div class="tool-row">
+                <button class="btn-tool" onclick="toggleModal(true)">Rules</button>
+                <button class="btn-tool btn-mute" onclick="toggleAudio()">🔊 SFX: ON</button>
+                <button class="btn-tool" style="color:var(--mathly-red)" onclick="resetData()">RESET</button>
+            </div>
+            <div class="level-map" id="map-ui"></div>
+        </div>
+    </div>
+
+    <div id="scr-game" class="game-area-container">
+        <img src="mouse.png" id="mouse-main" class="character-img" alt="Mouse">
+        <img src="panda.png" id="panda-main" class="character-img" alt="Panda">
+        <div class="wood-title-banner">
+            <img src="logo.png" class="banner-logo" alt="Logo">
+            <h2>ASSIGNMENTX - BASIC 5</h2>
+        </div>
+        <div class="card">
+            <div class="timer-container"><div id="timer-bar"></div></div>
+            <div style="display: flex; justify-content: space-between; font-weight: 900; font-size: 0.85rem; margin-bottom: 12px; color: var(--wood-brown);">
+                <div>SYNC: <span id="score">0</span></div>
+                <div id="lvl-indicator">LEVEL 1</div>
+                <div>⏳ <span id="timer-text">30</span>s</div>
+            </div>
+            <div class="key-badge" id="key-ui">MISSION: Classify the Outcome</div>
+            <div class="experiment-visual" id="visual-ui">🎲</div>
+            <div class="question-box" id="question-ui">Analyzing probability...</div>
+            
+            <div class="options-container">
+                <button class="option-btn" onclick="selectOption('Impossible')">Impossible</button>
+                <button class="option-btn" onclick="selectOption('Possible')">Possible</button>
+                <button class="option-btn" onclick="selectOption('Certain')">Certain</button>
+            </div>
+
+            <button class="btn-green" id="submit-btn" onclick="submitAnswer()">SUBMIT DATA</button>
+            <div id="feedback" style="height: 25px; margin-top: 12px; font-weight: 900; font-size: 0.95rem;"></div>
+            
+            <div class="tool-row">
+                <button class="btn-tool" onclick="getHint()">💡 HINT</button>
+                <button class="btn-tool btn-exit" onclick="exitToMenu()">🚪 EXIT</button>
+                <button class="btn-tool btn-mute" onclick="toggleAudio()">🔊 SFX: ON</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="scr-end" class="game-area-container">
+        <div class="card">
+            <h1 id="end-status" style="font-size: 1.8rem; margin-bottom: 15px; font-weight: 900; color: var(--wood-brown);">MISSION COMPLETE</h1>
+            <div style="font-size: 5rem; font-weight: 900; color: var(--mathly-yellow); line-height: 1;" id="final-score">0</div>
+            <p id="end-msg" style="font-weight: 800; margin: 20px 0; color: var(--wood-brown); font-size: 1.1rem;"></p>
+            <button class="btn-green" onclick="location.reload()">RETURN TO BASE</button>
+        </div>
+    </div>
+
+    <div id="rules-modal" class="modal">
+        <div class="modal-content">
+            <h2 style="color: var(--wood-brown); margin-bottom: 20px; font-weight: 900; font-size: 1.4rem;">CHANCE PROTOCOLS</h2>
+            <ul style="text-align: left; font-size: 0.95rem; line-height: 1.8; font-weight: 700; list-style: none; margin-bottom: 25px;">
+                <li>❌ <span style="color:var(--mathly-red)">IMPOSSIBLE:</span> Can NEVER happen (like a 7 on a die).</li>
+                <li>✅ <span style="color:var(--mathly-blue)">POSSIBLE:</span> MIGHT happen (like a 3 on a die).</li>
+                <li>⭐ <span style="color:var(--mathly-green)">CERTAIN:</span> WILL always happen.</li>
+            </ul>
+            <button class="btn-green" onclick="toggleModal(false)">CONFIRMED</button>
+        </div>
+    </div>
+
+    <script>
+        const audio = { bg: new Audio("BGMSound.mp3"), correct: new Audio("correctanswer.mp3"), wrong: new Audio("wronganswer.mp3") };
+        audio.bg.loop = true;
+        let isMuted = false;
+
+        function toggleAudio() {
+            isMuted = !isMuted;
+            document.querySelectorAll('.btn-mute').forEach(b => b.innerText = isMuted ? "🔇 SFX: OFF" : "🔊 SFX: ON");
+            if(isMuted) { audio.bg.pause(); } else { audio.bg.play().catch(()=>{}); }
+        }
+
+        // Background Logic
+        const canvas = document.getElementById('bg-canvas');
+        const ctx = canvas.getContext('2d');
+        let symbols = [];
+        function initBG() {
+            canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+            symbols = Array.from({length: 40}, () => ({
+                x: Math.random()*canvas.width, 
+                y: Math.random()*canvas.height - canvas.height,
+                char: ['?','!','%','🎲','🔮'][Math.floor(Math.random()*5)],
+                size: Math.random()*25 + 20, speed: Math.random()*1.5 + 1.0, 
+                color: ["#e84118", "#fbc531", "#2ecc71", "#00d2ff"][Math.floor(Math.random()*4)]
+            }));
+        }
+        function drawBG() {
+            ctx.clearRect(0,0,canvas.width,canvas.height);
+            symbols.forEach(s => {
+                ctx.fillStyle = s.color; ctx.font = `900 ${s.size}px Inter`;
+                ctx.fillText(s.char, s.x, s.y);
+                s.y += s.speed; if(s.y > canvas.height + 50) { s.y = -50; s.x = Math.random()*canvas.width; }
+            });
+            requestAnimationFrame(drawBG);
+        }
+        initBG(); drawBG();
+
+        // Game State Logic
+        let storageKey = 'portal_prob_b5';
+        let progress = JSON.parse(localStorage.getItem(storageKey)) || { unlocked: [1] };
+        let state = { score: 0, qIdx: 1, currentLvl: 1, timer: null, selected: '', correctAns: '', hint: '' };
+
+        const questions = {
+            1: [ // Dice
+                { q: "Rolling a 7 on a standard six-sided die.", a: "Impossible", v: "🎲", h: "Check the numbers on a Ludo die!" },
+                { q: "Rolling a number between 1 and 6.", a: "Certain", v: "🎲", h: "Are there any other numbers?" },
+                { q: "Rolling a 4 on a standard die.", a: "Possible", v: "🎲", h: "It could happen, but not always." }
+            ],
+            2: [ // Bags
+                { q: "In a bag of only RED marbles, picking a RED one.", a: "Certain", v: "🔴", h: "Is there anything else in the bag?" },
+                { q: "In a bag of only RED marbles, picking a BLUE one.", a: "Impossible", v: "🔴", h: "Check the colors available!" },
+                { q: "In a bag of RED and BLUE, picking a BLUE one.", a: "Possible", v: "🔴🔵", h: "It's one of the options!" }
+            ],
+            3: [ // Daily Life
+                { q: "The sun rising in the East tomorrow.", a: "Certain", v: "☀️", h: "Think about how nature works." },
+                { q: "A human flying by flapping their arms.", a: "Impossible", v: "🚶", h: "Is this physically possible?" },
+                { q: "It raining in Accra this afternoon.", a: "Possible", v: "🌧️", h: "Check the weather potential." }
+            ],
+            4: [ // Mixed sets
+                { q: "Picking a vowel from the word 'MATH'.", a: "Possible", v: "🔠", h: "Are there any vowels in M-A-T-H?" },
+                { q: "Picking a letter from the word 'SKY'.", a: "Certain", v: "🔠", h: "Will you always get a letter?" },
+                { q: "Picking a number from the word 'HELLO'.", a: "Impossible", v: "🔠", h: "Are there digits in that word?" }
+            ]
+        };
+
+        function startMission() {
+            if(!isMuted) audio.bg.play().catch(()=>{});
+            document.getElementById('scr-start').classList.remove('active');
+            document.getElementById('scr-game').classList.add('active');
+            state.score = 0; state.qIdx = 1;
+            renderMap();
+            generateChallenge();
+        }
+
+        function renderMap() {
+            const mapUi = document.getElementById('map-ui');
+            mapUi.innerHTML = '';
+            for(let i=1; i<=4; i++) {
+                const unlocked = progress.unlocked.includes(i);
+                const dot = document.createElement('div');
+                dot.className = `lvl-dot ${unlocked ? '' : 'locked'} ${state.currentLvl === i ? 'active-lvl' : ''}`;
+                dot.innerText = unlocked ? i : '🔒';
+                if(unlocked) dot.onclick = () => { state.currentLvl = i; renderMap(); generateChallenge(); };
+                mapUi.appendChild(dot);
+            }
+            document.getElementById('lvl-indicator').innerText = `LEVEL ${state.currentLvl}`;
+        }
+
+        function selectOption(val) {
+            state.selected = val;
+            document.querySelectorAll('.option-btn').forEach(btn => {
+                btn.classList.toggle('selected', btn.innerText === val);
+            });
+        }
+
+        function generateChallenge() {
+            const lvlQuestions = questions[state.currentLvl];
+            const current = lvlQuestions[Math.floor(Math.random() * lvlQuestions.length)];
+            
+            state.correctAns = current.a;
+            state.hint = current.h;
+            state.selected = '';
+            
+            document.getElementById('question-ui').innerText = current.q;
+            document.getElementById('visual-ui').innerText = current.v;
+            document.getElementById('feedback').innerText = '';
+            document.querySelectorAll('.option-btn').forEach(btn => btn.classList.remove('selected'));
+            
+            runTimer();
+        }
+
+        function runTimer() {
+            clearInterval(state.timer);
+            let t = 30;
+            state.timer = setInterval(() => {
+                t--;
+                document.getElementById('timer-text').innerText = t;
+                document.getElementById('timer-bar').style.width = (t/30)*100 + "%";
+                if(t <= 0) submitAnswer(true);
+            }, 1000);
+        }
+
+        function submitAnswer(timeout = false) {
+            if(!state.selected && !timeout) {
+                document.getElementById('feedback').innerText = "Select an option first!";
+                return;
+            }
+
+            clearInterval(state.timer);
+            const isCorrect = state.selected === state.correctAns;
+            const fb = document.getElementById('feedback');
+
+            if(isCorrect) {
+                state.score += 10;
+                fb.innerText = "✓ PROBABILITY MATCHED!"; fb.style.color = "var(--mathly-green)";
+                if(!isMuted) audio.correct.play();
+            } else {
+                fb.innerText = `✗ ERROR: It was ${state.correctAns}!`; fb.style.color = "var(--mathly-red)";
+                if(!isMuted) audio.wrong.play();
+            }
+
+            document.getElementById('score').innerText = state.score;
+            setTimeout(() => {
+                if(state.qIdx < 5) {
+                    state.qIdx++;
+                    generateChallenge();
+                } else {
+                    endGame();
+                }
+            }, 2000);
+        }
+
+        function endGame() {
+            document.getElementById('scr-game').classList.remove('active');
+            document.getElementById('scr-end').classList.add('active');
+            document.getElementById('final-score').innerText = state.score;
+            const msg = document.getElementById('end-msg');
+            
+            if(state.score >= 30) {
+                msg.innerText = "Excellent Chance Analysis, Scout!";
+                if(state.currentLvl < 4 && !progress.unlocked.includes(state.currentLvl + 1)) {
+                    progress.unlocked.push(state.currentLvl + 1);
+                    localStorage.setItem(storageKey, JSON.stringify(progress));
+                }
+            } else {
+                msg.innerText = "The portal needs better data. Try again!";
+            }
+        }
+
+        function getHint() {
+            document.getElementById('feedback').innerText = `HINT: ${state.hint}`;
+            document.getElementById('feedback').style.color = "var(--mathly-yellow)";
+        }
+
+        function exitToMenu() {
+            if (confirm("Abandon mission?")) {
+                clearInterval(state.timer);
+                document.getElementById('scr-game').classList.remove('active');
+                document.getElementById('scr-start').classList.add('active');
+            }
+        }
+
+        function toggleModal(s) { document.getElementById('rules-modal').style.display = s ? 'flex' : 'none'; }
+        function resetData() { if(confirm("Reset progress?")) { localStorage.removeItem(storageKey); location.reload(); } }
+        window.addEventListener('resize', initBG);
+        renderMap();
+    </script>
+</body>
+</html>
